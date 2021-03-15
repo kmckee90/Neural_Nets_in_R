@@ -1,4 +1,4 @@
-# Neural_Nets_in_R
+# Neural Nets in R
 Some neural nets in R, mainly for didactic purposes. 
 Just a bit of fun and education.
 
