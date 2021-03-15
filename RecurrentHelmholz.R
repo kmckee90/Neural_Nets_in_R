@@ -3,17 +3,14 @@
 # -------------------------------------------------------------------------
 #Helmholtz Machine simulation and training 
 #Author: Kevin McKee
-#Summary: This generates data from a binary Restricted Boltzmann Machine neural network, which describes the joint distribution of a bit vector using hidden layers.
-# The helmholtz machine learns that data generating structure using stochastic gradient descent with a local delta rule by simulating the data.
-# i.e., learning happens as a feedback cycle between the recognition model and the generative model.
-# The solution should therefore recover the data generating parameters.
+#Summary: This is my attempt to take the previous Helmholz machine script
+# and turn it into a recurrent helmholz machine by adding memory layers
+# Connections between memory layers (t-k) and the current layer (t) 
+# can be between any layers.
+# If this is used in a convolutional way, then perhaps it could allow 
+# lateral within-layer connections.
 
-# The real-time output shows the correlation between true node weight vectors and currently estimated node weight vectors in layer 1 and 2.
-# Layer 2 will not start to match the true values until Layer 1 is mostly correct.
-
-# Some code is left commented to graphically display the learning process of 3 parameters.
-
-# Note: I may code this in RCPP for speed increases of multiple orders of magnitude. Unrepresentatively slow in R.
+# Output includes generated text from the wikipedia article on the civil war. Not very effective but does show learning.
 # -------------------------------------------------------------------------
 
 
@@ -104,7 +101,7 @@ maxIter<-900000
 
 
 # Pt 2: Simulation --------------------------------------------------------
-# Gen data ----------------------------------------------------------------
+#This section mainly generates the structure (L) used by the model to navigate its connections.
 
 # p<-ncol(dat)
 # n<-nrow(dat)
@@ -142,16 +139,12 @@ t0dims<-unlist(lapply(L[-1],"[",1)) #dim.v[1:(2+sum(modelDims))+1]
 
 W<-matrix(0, dim.total, dim.total,dimnames=list(dim.v,dim.v))
 
-
 W.f<-W==1
 W[1,1]<-1
-
 W.f[t0dims,1]<-TRUE
-
 for(i in 3:Q){
   W.f[L[[i-1]][[1]],L[[i]][[1]]]<-T
 }
-
 for(i in 2:Q){
   for(l in 1:(lags))
     W.f[ L[[i]][[1]], L[[i]][[l+1]] ]<-T
@@ -159,23 +152,16 @@ for(i in 2:Q){
 }
 
 W.f[t0dims,setdiff(unlist(L), c(t0dims,"bias") )]<-T
-
 W[W.f]<-rnorm(sum(W.f))
 Wg<-W
-
 Wr<-Wg
 Wr[t0dims,t0dims]<-t(Wg[t0dims,t0dims])
 # Wg[]
 round(Wg,2);round(Wr,2)
 sim.Wg<-Wg
-
 Wg.f<-W.f
 Wr.f<-W.f;Wr.f[t0dims,t0dims]<-t(Wg.f[t0dims,t0dims])
 
-  
-# X.gen<-rRHH(n, sim.Wg)
-# dat<-X.gen[,L[[2]]]
-# dat<-X.gen[,unlist(L[[2]][[1]])]
 
 
 
@@ -188,10 +174,6 @@ Wr[Wr.f]<-rnorm(sum(Wr.f))
 
 Wr[Wr==1]<-0
 Wg[Wg==1]<-0
-# Wr[1,1]<-1
-# Wg[1,1]<-1
-
-
 
 nIter<- 500000
 for(i in 1:nIter){
@@ -246,7 +228,7 @@ for(i in 1:nIter){
    
    if(i%%5==0) cat("\r",i,"\t\t")
    
-   #Output some shit
+   #Output 
    if(i%%50==0){
      cat("\nData:\t")
      print(printData(dat.chunk))
@@ -259,12 +241,11 @@ for(i in 1:nIter){
 }
 
 
- 
-
 
 printData(simDat)
 
-# Generate some shit ------------------------------------------------------
+
+# Generate data ------------------------------------------------------
 simDat<-rRHH(20, Wg)[,L[[2]][[1]]]
 
 dat.char<-matrix(NA, nrow(simDat), 1)
@@ -275,4 +256,3 @@ for(i in 1:length(k1)) {
   dat.char[i]<-c(names(k2)[k2==k1[i]], NA)[1]
 }
 print(paste0(dat.char, collapse=" "))
-}
