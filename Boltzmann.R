@@ -61,6 +61,15 @@ calcGrad <- function(X, Wr, Wg) {
 modelDims<-c(8)
 BIAS<-TRUE
 
+#Set up the dimensions of the simulation, 
+dat<-matrix(0, 100000, 50) #Data dimensions
+chunkSize<-30 #Model learns in simple random samples of the data of this size. Small samples tend toward more stochastic learning, more global fit.
+
+lrate = .1
+momentum <- 0.8
+nIter <- 50000
+
+
 # Gen data ----------------------------------------------------------------
 p<-ncol(dat)
 n<-nrow(dat)
@@ -101,22 +110,6 @@ dat<-X.gen[,L[[2]]]
 
 
 # Fit to simulated data ---------------------------------------------------
-p <- ncol(dat)
-n <- nrow(dat)
-q <- length(modelDims)
-Q <- q + 2
-dim.total <- 1 + p + sum(modelDims)
-dimlab <- c("bias", paste0("x", 1:p))
-L <- list(dimlab[1], dimlab[-1])
-for (d in 1:q) {
-  L[[d + 2]] <- paste0("h", d, "_", 1:modelDims[d])
-}
-dim.v <- unlist(L)
-X <- as.matrix(cbind(1, dat, matrix(0, n, sum(modelDims))))
-colnames(X) <- dim.v
-
-
-
 W <- matrix(0, dim.total, dim.total,
             dimnames = list(dim.v, dim.v))
 for (i in 2:(Q - 1))  W[unlist(L[(i + 1)]), L[[i]]] <-runif(W[unlist(L[(i + 1)]), L[[i]]])*2-1
@@ -133,20 +126,13 @@ Wg[L[[Q]], L[[1]]] <- 0
 Wr[L[[1]], L[[2]]] <- 0
 
 
-
-lrate = .1
-momentum <- 0.8
-nIter <- 50000
 MSr<-MSg <- 0
-
 Wg.diag <- diag(Wg)
 plotFrame<-seq(100,nIter,by=25)
 trackVal<-matrix(0, nIter, 4)
 for (i in 1:nIter) {
   # cat("\r", i, "\t\t")
   Gr <- calcGrad(X[sample(1:nrow(X),size=500,replace=F),], Wr, Wg)
-
-  
   Gg <- Gr
   Gg[-1, -1] <- t(Gr)[-1, -1]
   MSr <- MSr * momentum + Gr  
@@ -160,7 +146,7 @@ for (i in 1:nIter) {
   # 
   if(i %in% plotFrame){
     
-  # if(i>200)    dev.off()
+    # if(i>200)    dev.off()
     # par(mfrow=c(1,3))
     # plot(trackVal[1:i,1:2], type="o")
     # points(trackVal[1:5,1:2], pch=16,cex=2, col="red")
@@ -173,12 +159,12 @@ for (i in 1:nIter) {
     # plot(trackVal[1:i,3:4], type="o")
     # points(trackVal[1:5,3:4], pch=16,cex=2, col="red")
     # points(trackVal[(i-5):i,3:4], pch=16,cex=2, col="blue")
-
-
+    
+    
     corMat<-round(cor(sim.Wg[L[[2]],L[[3]]], Wg[L[[2]],L[[3]]]),2)
     corMat.s<-data.frame(corMat)
     corMat.s[abs(corMat)<.5]<-""
-
+    
     # corMat2<-round(cor(sim.Wg[L[[3]],L[[4]]], Wg[L[[3]],L[[4]]]),2)
     # corMat2.s<-data.frame(corMat2)
     # corMat2.s[abs(corMat2)<.5]<-""
@@ -187,7 +173,7 @@ for (i in 1:nIter) {
     print(corMat.s)
     # print(corMat2.s)
     cat("\nIteration",i,"\n\n")
-
+    
   }
 }
 
